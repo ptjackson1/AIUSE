@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Use Cases Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            height: 400px;
+        }
+
+        .category-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 25px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.05);
+        }
+
+        .filter-btn.active {
+            background: #764ba2;
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .companies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .company-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .company-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .company-card.mature {
+            border-left-color: #10b981;
+        }
+
+        .company-card.growth {
+            border-left-color: #f59e0b;
+        }
+
+        .company-card.emerging {
+            border-left-color: #ef4444;
+        }
+
+        .company-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .use-case {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .impact {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .adoption-legend {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .mature-color { background: #10b981; }
+        .growth-color { background: #f59e0b; }
+        .emerging-color { background: #ef4444; }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .companies-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🤖 AI Use Cases Dashboard</h1>
+            <p>Real-world AI implementations across industries with measurable impact</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">30</div>
+                <div class="stat-label">Companies Tracked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6</div>
+                <div class="stat-label">Industry Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">$300M</div>
+                <div class="stat-label">Peak ARR Growth</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4B+</div>
+                <div class="stat-label">FSD Miles Driven</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="chart-container">
+                <h3 style="margin-bottom: 20px; color: #333;">Companies by Industry Category</h3>
+                <canvas id="categoryChart" style="max-height: 300px;"></canvas>
+            </div>
+            
+            <div class="adoption-legend">
+                <h3 style="margin-bottom: 20px; color: #333;">Adoption Stages</h3>
+                <div class="legend-item">
+                    <div class="legend-color mature-color"></div>
+                    <div>
+                        <strong>Mature/Scaling</strong><br>
+                        <small>High adoption, clear ROI</small>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color growth-color"></div>
+                    <div>
+                        <strong>Rapid Growth</strong><br>
+                        <small>Enterprise adoption, strong growth</small>
+                    </div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color emerging-color"></div>
+                    <div>
+                        <strong>Emerging</strong><br>
+                        <small>Early deployments, high potential</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="category-filter">
+            <button class="filter-btn active" data-category="all">All Categories</button>
+            <button class="filter-btn" data-category="consumer">Consumer & Retail</button>
+            <button class="filter-btn" data-category="healthcare">Healthcare</button>
+            <button class="filter-btn" data-category="enterprise">Enterprise</button>
+            <button class="filter-btn" data-category="financial">Financial</button>
+            <button class="filter-btn" data-category="physical">Physical World</button>
+            <button class="filter-btn" data-category="infrastructure">Infrastructure</button>
+        </div>
+
+        <div class="companies-grid" id="companiesGrid">
+            <!-- Companies will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        const aiCompanies = [
+            {
+                category: 'consumer',
+                name: 'Amazon Rufus',
+                useCase: 'Shopping Copilot',
+                description: 'Conversational agent that answers product questions, summarizes reviews, and guides discovery',
+                impact: 'Growing "Rufus occasions" expected to lift GMV through 2025',
+                stage: 'mature'
+            },
+            {
+                category: 'consumer',
+                name: 'TikTok Symphony',
+                useCase: 'Ad Creation',
+                description: 'Auto-generates TikTok-native ad creatives and copy for brands to scale campaigns',
+                impact: '+37% purchase intent, +38% brand favorability for optimized ads',
+                stage: 'mature'
+            },
+            {
+                category: 'consumer',
+                name: 'Apple Intelligence',
+                useCase: 'Personal AI Assistant',
+                description: 'On-device models for writing tools, image creation, context-aware Siri',
+                impact: 'Stronger iPhone 16 sales YoY in markets where available',
+                stage: 'mature'
+            },
+            {
+                category: 'consumer',
+                name: 'Spotify AI DJ',
+                useCase: 'Music Curation',
+                description: 'AI-powered DJ that provides personalized music recommendations with voice commentary',
+                impact: 'Available in 60+ markets, driving engagement and quality metrics',
+                stage: 'mature'
+            },
+            {
+                category: 'consumer',
+                name: 'ElevenLabs',
+                useCase: 'Voice Generation/Dubbing',
+                description: 'Clones voices and auto-translates content into 29 languages',
+                impact: '1,000 years of audio content generated by millions of users',
+                stage: 'mature'
+            },
+            {
+                category: 'healthcare',
+                name: 'Kaiser Permanente Ambient Scribe',
+                useCase: 'Clinical Documentation',
+                description: 'Captures clinician-patient dialog via phone mic, transcribes & drafts notes in real-time',
+                impact: '10,000+ clinicians enabled, 2.5M+ encounters recorded',
+                stage: 'mature'
+            },
+            {
+                category: 'healthcare',
+                name: 'Abridge',
+                useCase: 'Clinical Conversation Summarization',
+                description: 'Turns visit audio into structured clinical notes integrated into hospital systems',
+                impact: 'CARR jumped $50M → $117M in 5 months; 25K docs producing 10M+ summaries',
+                stage: 'mature'
+            },
+            {
+                category: 'healthcare',
+                name: 'Insilico Medicine',
+                useCase: 'Drug Discovery',
+                description: 'AI-driven drug development reducing time to pre-clinical candidate status',
+                impact: '30-80% reduction in R&D timelines vs traditional approaches',
+                stage: 'growth'
+            },
+            {
+                category: 'healthcare',
+                name: 'Cradle',
+                useCase: 'Biologics Engineering',
+                description: 'GenAI platform for engineering biologics',
+                impact: '1.5x to 12x speedup in pre-clinical R&D',
+                stage: 'growth'
+            },
+            {
+                category: 'enterprise',
+                name: 'Duolingo AI',
+                useCase: 'Language Learning Content',
+                description: 'AI generates language lessons and chess curriculum',
+                impact: 'Two-person team built complete chess curriculum using AI',
+                stage: 'mature'
+            },
+            {
+                category: 'enterprise',
+                name: 'Harvey',
+                useCase: 'Legal AI Co-counsel',
+                description: 'Drafts memos, summarizes discovery, checks case law',
+                impact: 'ARR grew $10M → $70M in 15 months; 235 customers',
+                stage: 'growth'
+            },
+            {
+                category: 'enterprise',
+                name: 'Decagon',
+                useCase: 'AI Support Agents',
+                description: 'Autonomous agents resolve routine customer tickets',
+                impact: 'ARR grew ~10x in 2024; staff becoming "AI managers"',
+                stage: 'growth'
+            },
+            {
+                category: 'enterprise',
+                name: 'GitHub Copilot',
+                useCase: 'Code Generation',
+                description: 'AI pair programmer suggesting code completions',
+                impact: '77,000+ organizations adopted, up 180% YoY',
+                stage: 'mature'
+            },
+            {
+                category: 'enterprise',
+                name: 'Microsoft 365 Copilot',
+                useCase: 'Office Productivity',
+                description: 'AI assistant across Microsoft Office suite',
+                impact: 'Users expanded seats 10x over 18 months',
+                stage: 'mature'
+            },
+            {
+                category: 'enterprise',
+                name: 'Salesforce Agentforce',
+                useCase: 'Customer Service Automation',
+                description: 'Automated customer support and case resolution',
+                impact: '3,000 paying customers within 90 days of launch',
+                stage: 'growth'
+            },
+            {
+                category: 'enterprise',
+                name: 'Anysphere Cursor',
+                useCase: 'AI Code Editor',
+                description: 'AI-powered code editor for developers',
+                impact: 'ARR grew from $1M to $300M in 25 months',
+                stage: 'growth'
+            },
+            {
+                category: 'financial',
+                name: 'Bank of America Erica',
+                useCase: 'Virtual Financial Assistant',
+                description: '24/7 concierge for transaction search, insights, bill reminders',
+                impact: '2B+ client interactions, 40M users, 50K+ improvements',
+                stage: 'mature'
+            },
+            {
+                category: 'financial',
+                name: 'J.P. Morgan AI',
+                useCase: 'End-to-end Modernization',
+                description: 'AI for fraud, marketing, trading, risk, operations',
+                impact: 'Expected AI value +65% from 2023-2025E',
+                stage: 'growth'
+            },
+            {
+                category: 'financial',
+                name: 'AlphaSense',
+                useCase: 'Market Intelligence',
+                description: 'LLM-powered search across filings, transcripts, research',
+                impact: 'ARR scaled $150M → $420M (2022-2024)',
+                stage: 'growth'
+            },
+            {
+                category: 'physical',
+                name: 'Tesla FSD',
+                useCase: 'Autonomous Driving',
+                description: 'Full self-driving capability using neural nets',
+                impact: '~100x increase in FSD miles to 4B+ over 33 months',
+                stage: 'growth'
+            },
+            {
+                category: 'physical',
+                name: 'Waymo',
+                useCase: 'Robotaxi Service',
+                description: 'Fully autonomous ride-hailing',
+                impact: '0% to 27% San Francisco rideshare market share in 20 months',
+                stage: 'growth'
+            },
+            {
+                category: 'physical',
+                name: 'Applied Intuition',
+                useCase: 'Vehicle Intelligence',
+                description: 'Simulation and software for autonomous vehicles',
+                impact: 'Serving 18 of top global auto OEMs',
+                stage: 'growth'
+            },
+            {
+                category: 'physical',
+                name: 'Anduril',
+                useCase: 'Defense Systems',
+                description: 'AI-enabled autonomous drones and defense systems',
+                impact: '~2x YoY revenue growth for 2 years',
+                stage: 'emerging'
+            },
+            {
+                category: 'physical',
+                name: 'KoBold Metals',
+                useCase: 'Mining Exploration',
+                description: 'AI-driven mineral deposit discovery',
+                impact: 'Reversing industry trend of declining discovery efficiency',
+                stage: 'emerging'
+            },
+            {
+                category: 'physical',
+                name: 'Carbon Robotics',
+                useCase: 'Agricultural Weeding',
+                description: 'AI-powered laser weeding system',
+                impact: '230K+ acres weeded, 100K+ gallons herbicide prevented',
+                stage: 'emerging'
+            },
+            {
+                category: 'physical',
+                name: 'Halter',
+                useCase: 'Livestock Management',
+                description: 'AI-driven rotational grazing with smart collars',
+                impact: '+150% net-new collars contracted YoY',
+                stage: 'emerging'
+            },
+            {
+                category: 'infrastructure',
+                name: 'Scale AI',
+                useCase: 'Data Labeling',
+                description: 'AI training data preparation and evaluation',
+                impact: 'Revenue grew 160% to $870M in 2024',
+                stage: 'growth'
+            },
+            {
+                category: 'infrastructure',
+                name: 'VAST Data',
+                useCase: 'AI Data Storage',
+                description: 'Unified storage platform for AI workloads',
+                impact: '$0 to $2B lifetime sales in 6 years',
+                stage: 'growth'
+            },
+            {
+                category: 'infrastructure',
+                name: 'CoreWeave',
+                useCase: 'GPU Cloud Computing',
+                description: 'Specialized cloud for AI workloads',
+                impact: 'Revenue grew 730% to $1.9B YoY',
+                stage: 'growth'
+            },
+            {
+                category: 'infrastructure',
+                name: 'Oracle AI Infrastructure',
+                useCase: 'AI Cloud Services',
+                description: 'Infrastructure for AI model training and deployment',
+                impact: 'Revenue grew 50x to $948M over 2 years',
+                stage: 'growth'
+            }
+        ];
+
+        const categoryNames = {
+            'consumer': 'Consumer & Retail',
+            'healthcare': 'Healthcare',
+            'enterprise': 'Enterprise',
+            'financial': 'Financial',
+            'physical': 'Physical World',
+            'infrastructure': 'Infrastructure'
+        };
+
+        let chartInstance = null;
+        let currentFilter = 'all';
+
+        function initChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            const categoryCounts = {};
+            aiCompanies.forEach(company => {
+                categoryCounts[company.category] = (categoryCounts[company.category] || 0) + 1;
+            });
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categoryCounts).map(cat => categoryNames[cat]),
+                    datasets: [{
+                        data: Object.values(categoryCounts),
+                        backgroundColor: [
+                            '#667eea',
+                            '#764ba2',
+                            '#f093fb',
+                            '#f5576c',
+                            '#4facfe',
+                            '#00f2fe'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderCompanies(companies) {
+            const grid = document.getElementById('companiesGrid');
+            grid.innerHTML = companies.map(company => `
+                <div class="company-card ${company.stage}">
+                    <div class="company-name">${company.name}</div>
+                    <div class="use-case">${company.useCase}</div>
+                    <div class="description">${company.description}</div>
+                    <div class="impact">
+                        💡 ${company.impact}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterCompanies(category) {
+            currentFilter = category;
+            
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-category="${category}"]`).classList.add('active');
+            
+            // Filter and render companies
+            const filtered = category === 'all' 
+                ? aiCompanies 
+                : aiCompanies.filter(company => company.category === category);
+            
+            renderCompanies(filtered);
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+            renderCompanies(aiCompanies);
+            
+            // Add event listeners to filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    filterCompanies(this.dataset.category);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
